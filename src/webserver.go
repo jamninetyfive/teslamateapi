@@ -133,6 +133,9 @@ func main() {
 
 			// v1 /api/v1/globalsettings endpoints
 			v1.GET("/globalsettings", TeslaMateAPIGlobalsettingsV1)
+
+			// v1 /api/v1/car/:CarID/vampire_drain endpoints
+			v1.GET("/cars/:CarID/vampire_drain", TeslaMateAPICarsVampireDrainV1)
 		}
 
 		// /api/ping endpoint
@@ -150,6 +153,7 @@ func main() {
 	r.GET("/cars/:CarID/status", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 	r.GET("/cars/:CarID/updates", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 	r.GET("/globalsettings", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
+	r.GET("/cars/:CarID/vampire_drain", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 
 	// build the http server
 	server := &http.Server{
