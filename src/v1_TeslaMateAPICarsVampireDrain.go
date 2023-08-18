@@ -17,22 +17,21 @@ func TeslaMateAPICarsVampireDrainV1(c *gin.Context) {
 
 	// vampire-drain struct - child of Data
 	type VampireDrain struct {
-		DriveID         int             `json:"drive_id"`         // int
-		StartDate       string          `json:"start_date"`       // string
-		EndDate         string          `json:"end_date"`         // string
-		Duration     	int             `json:"duration"`     	  // int
-		Period		    int             `json:"period"`           // int
-		Standby 	    int             `json:"standby"`          // int
-		SOC 		    int             `json:"soc_diff"`         // int
-		kWh 		    float64         `json:"consumption"`              // float64
-		AvgPower 	   	float64         `json:"avg_power"`         // float64
-		TRLossPer 		int             `json:"range_lost_per_hour_km"`          // int
-		TRLoss 		    string          `json:"range_diff_km"`              // string
+		DriveID     int     `json:"drive_id"`               // int
+		StartDate   string  `json:"start_date"`             // string
+		EndDate     string  `json:"end_date"`               // string
+		Duration    int     `json:"duration"`               // int
+		Period      int     `json:"period"`                 // int
+		Standby     int     `json:"standby"`                // int
+		SOC         int     `json:"soc_diff"`               // int
+		Consumption float64 `json:"consumption"`            // float64
+		AvgPower    float64 `json:"avg_power"`              // float64
+		TRLossPer   int     `json:"range_lost_per_hour_km"` // int
+		TRLoss      string  `json:"range_diff_km"`          // string
 	}
 
 	// Data struct - child of JSONData
 	type Data struct {
-		Car Car `json:"car"` // Car
 		// Drives []Drives `json:"drives"` // Drives
 		VampireDrain []VampireDrain `json:"vampire_drain"` // VampireDrain
 	}
@@ -55,7 +54,7 @@ func TeslaMateAPICarsVampireDrainV1(c *gin.Context) {
 	ResultPage = (ResultPage * ResultShow)
 
 	// query to collect data
-		// getting data from database
+	// getting data from database
 	query := `
 	with merge as (
 		SELECT 
@@ -73,7 +72,7 @@ func TeslaMateAPICarsVampireDrainV1(c *gin.Context) {
 		   p.odometer AS end_km
 		FROM charging_processes c
 		JOIN positions p ON c.position_id = p.id
-		WHERE c.car_id = '2' AND start_date BETWEEN '2023-05-20T08:22:34.273Z' AND '2023-08-18T08:22:34.273Z'
+		WHERE c.car_id = $1 AND start_date BETWEEN '2023-05-20T08:22:34.273Z' AND '2023-08-18T08:22:34.273Z'
 		UNION
 		SELECT 
 		   d.start_date AS start_date,
@@ -91,7 +90,9 @@ func TeslaMateAPICarsVampireDrainV1(c *gin.Context) {
 		FROM drives d
 		JOIN positions start_position ON d.start_position_id = start_position.id
 		JOIN positions end_position ON d.end_position_id = end_position.id
-		WHERE d.car_id = '2' AND start_date BETWEEN '2023-05-20T08:22:34.273Z' AND '2023-08-18T08:22:34.273Z'
+		WHERE d.car_id = $1 
+		ORDER BY start_date DESC
+		LIMIT $2 OFFSET $3;
 	   ), 
 	   v as (
 		SELECT
@@ -133,7 +134,7 @@ func TeslaMateAPICarsVampireDrainV1(c *gin.Context) {
 		   WHERE
 			 state = 'asleep' AND
 			 v.start_date <= s.start_date AND s.end_date <= v.end_date AND
-			 s.car_id = '2'
+			 s.car_id = $1
 		 ) s_asleep,
 		 LATERAL (
 		   SELECT EXTRACT(EPOCH FROM sum(age(s.end_date, s.start_date))) as sleep
@@ -141,9 +142,9 @@ func TeslaMateAPICarsVampireDrainV1(c *gin.Context) {
 		   WHERE
 			 state = 'offline' AND
 			 v.start_date <= s.start_date AND s.end_date <= v.end_date AND
-			 s.car_id = '2'
+			 s.car_id = $1
 		 ) s_offline
-	   JOIN cars c ON c.id = '2'
+	   JOIN cars c ON c.id = $1
 	   WHERE
 		 v.duration > (6 * 60 * 60)
 		 AND v.start_range - v.end_range >= 0
@@ -166,10 +167,10 @@ func TeslaMateAPICarsVampireDrainV1(c *gin.Context) {
 			&vampireDrain.SOC,
 			&vampireDrain.TRLossPer,
 			&vampireDrain.TRLoss,
-			&vampireDrain.kWh,
+			&vampireDrain.Consumption,
 			&vampireDrain.AvgPower,
 		)
-			
+
 		if err != nil {
 			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsVampireDrainV1", CarsVampireDrainError1, err.Error())
 			return
@@ -186,9 +187,6 @@ func TeslaMateAPICarsVampireDrainV1(c *gin.Context) {
 	// creating JSONData object
 	jsonData := JSONData{
 		Data: Data{
-			Car: Car{
-				CarID: CarID,
-			},
 			VampireDrain: vampireDrains,
 		},
 	}
