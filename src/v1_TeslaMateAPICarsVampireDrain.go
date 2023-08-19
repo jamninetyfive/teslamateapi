@@ -51,6 +51,7 @@ func TeslaMateAPICarsVampireDrainV1(c *gin.Context) {
 	} else {
 		ResultPage = 0
 	}
+	
 	ResultPage = (ResultPage * ResultShow)
 
 	// query to collect data
