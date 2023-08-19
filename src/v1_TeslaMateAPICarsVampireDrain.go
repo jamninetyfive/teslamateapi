@@ -51,7 +51,7 @@ func TeslaMateAPICarsVampireDrainV1(c *gin.Context) {
 	} else {
 		ResultPage = 0
 	}
-	
+
 	ResultPage = (ResultPage * ResultShow)
 
 	// query to collect data
@@ -73,7 +73,7 @@ func TeslaMateAPICarsVampireDrainV1(c *gin.Context) {
 		   p.odometer AS end_km
 		FROM charging_processes c
 		JOIN positions p ON c.position_id = p.id
-		WHERE c.car_id = $1 AND start_date BETWEEN '2023-05-20T08:22:34.273Z' AND '2023-08-18T08:22:34.273Z'
+		WHERE c.car_id = $1 
 		UNION
 		SELECT 
 		   d.start_date AS start_date,
@@ -93,7 +93,6 @@ func TeslaMateAPICarsVampireDrainV1(c *gin.Context) {
 		JOIN positions end_position ON d.end_position_id = end_position.id
 		WHERE d.car_id = $1 
 		ORDER BY start_date DESC
-		LIMIT $2 OFFSET $3;
 	   ), 
 	   v as (
 		SELECT
