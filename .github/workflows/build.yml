@@ -27,7 +27,6 @@ jobs:
         with:
           images: |
             dongzhen2022/teslamateapi
-            ghcr.io/jamninetyfive/teslamateapi
           tags: |
             type=edge
             type=ref,event=branch,enable=${{ (github.ref != 'refs/heads/main') }}
